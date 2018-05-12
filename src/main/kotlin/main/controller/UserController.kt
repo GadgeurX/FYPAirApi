@@ -5,8 +5,10 @@ import main.data.UserRepo
 import main.error.EmailExistException
 import main.error.InvalidUserOrPasswordException
 import main.error.UserExistException
+import main.manager.UserManager
 import main.model.Token
 import main.model.User
+import main.utils.CryptoHelper
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -19,11 +21,10 @@ class UserController {
 
     @Autowired
     private lateinit var repo: UserRepo
-    private var connectedUsers = mutableMapOf<Token, User>()
 
-    @PostMapping("/user")
-    fun registerUser(@RequestParam(value = "user") user: String, @RequestParam(value = "email") email: String, @RequestParam(value = "pwd") pwd: String): User {
-        val user = User(user, email, pwd, Config.PERMISSION.DEFAULT)
+    @PostMapping("/users")
+    fun registerUser(@RequestParam(value = "user") username: String, @RequestParam(value = "email") email: String, @RequestParam(value = "pwd") pwd: String): User {
+        val user = User(username, email, CryptoHelper.sha256(pwd), Config.PERMISSION.DEFAULT)
         for (dbUser in repo.findAll()) {
             if (user.email == dbUser.email)
                 throw EmailExistException()
@@ -34,15 +35,11 @@ class UserController {
         return user
     }
 
-    @GetMapping("/login/default")
-    fun loginUser(@RequestParam(value = "user") user: String, @RequestParam(value = "pwd") pwd: String): Token {
-        for (dbUser in repo.findAll()) {
-            if (user == dbUser.username && pwd == dbUser.password)
-            {
-                val token = Token()
-                connectedUsers[token] = dbUser
-                return token
-            }
+    @GetMapping("/users/default")
+    fun loginUser(@RequestParam(value = "user") username: String, @RequestParam(value = "pwd") pwd: String): Token {
+        for (dbUser in repo.findByUsername(username)) {
+            if (username == dbUser.username && CryptoHelper.sha256(pwd) == dbUser.password)
+                return UserManager.addUser(dbUser)
         }
         throw InvalidUserOrPasswordException()
     }

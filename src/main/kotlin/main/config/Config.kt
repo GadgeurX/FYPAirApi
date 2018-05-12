@@ -10,4 +10,6 @@ object Config {
     const val MONGO_DB_NAME = "FYP"
 
     const val USER_CONNECTION_TIMEOUT: Long = 300000
+
+    const val PARKING_SIZE = 0.05 // in KM
 }
