@@ -1,11 +1,9 @@
 package main.data
 
-import main.model.Parking
+import main.model.Location
 import main.model.PendingParking
 import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.data.geo.Distance
-import org.springframework.data.geo.Point
 
 interface PendingParkingRepo : MongoRepository<PendingParking, String> {
-    fun findByLocationNear(p: Point, d: Distance): List<PendingParking>
+    fun findByNode1AndNode2(node1: Location, node2: Location): List<PendingParking>
 }

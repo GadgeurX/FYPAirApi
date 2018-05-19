@@ -24,6 +24,8 @@ class UserController {
 
     @PostMapping("/users")
     fun registerUser(@RequestParam(value = "user") username: String, @RequestParam(value = "email") email: String, @RequestParam(value = "pwd") pwd: String): User {
+        if (username == "" || email == "" || pwd == "")
+            throw InvalidUserOrPasswordException()
         val user = User(username, email, CryptoHelper.sha256(pwd), Config.PERMISSION.DEFAULT)
         for (dbUser in repo.findAll()) {
             if (user.email == dbUser.email)

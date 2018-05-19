@@ -6,11 +6,10 @@ import main.data.PendingParkingRepo
 import main.error.AccessDeniedException
 import main.error.UserNotFoundException
 import main.manager.UserManager
+import main.manager.WayManager
 import main.model.Parking
+import main.model.PendingParking
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.geo.Distance
-import org.springframework.data.geo.Metrics
-import org.springframework.data.geo.Point
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -28,9 +27,18 @@ class ParkingController {
         val user = UserManager.getUser(token) ?: throw UserNotFoundException()
         if (!UserManager.userAllow(user, Config.PERMISSION.DEFAULT))
             throw AccessDeniedException()
-        for (pendingParking in pendingParkingRepo.findByLocationNear(Point(latitude, longitude), Distance(Config.PARKING_SIZE, Metrics.KILOMETERS)))
+        val parking = WayManager.getClosestParking(latitude, longitude) ?: return
+        val parkings = parkingRepo.findByNode1AndNode2(parking.node1, parking.node2)
+        if (!parkings.isEmpty())
+            return
+        val pendingParkings = pendingParkingRepo.findByNode1AndNode2(parking.node1, parking.node2)
+        if (pendingParkings.isEmpty()) {
+            pendingParkingRepo.insert(PendingParking(parking.node1, parking.node2, 0.5, 0.0))
+        }
+        for (pendingParking in pendingParkings)
         {
             pendingParking.completion += user.trust
+            pendingParkingRepo.save(pendingParking)
             if (pendingParking.completion >= 1) {
                 pendingParkingRepo.delete(pendingParking)
                 pendingParking.type = Parking.PARKING_TYPE.PARKING

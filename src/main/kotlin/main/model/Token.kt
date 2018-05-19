@@ -21,9 +21,6 @@ class Token(var token: String) {
     }
 
     override fun hashCode(): Int {
-        var result = token.hashCode()
-        result = 31 * result + timeout.hashCode()
-        result = 31 * result + creationTime.hashCode()
-        return result
+        return token.hashCode()
     }
 }
